@@ -64,6 +64,7 @@ public class TxConfig {
 
     /**
      * 线程池的队列类型 {@linkplain com.happylifeplat.transaction.common.enums.BlockingQueueTypeEnum}
+     * Linked说明使用了无界队列,可以使在线程池大小范围内的所有线程处于繁忙状态
      */
     private String blockingQueueType = "Linked";
 
@@ -102,6 +103,7 @@ public class TxConfig {
 
     /**
      * txManagerUrl服务地址
+     * 即事务管理服务器地址
      */
     private String txManagerUrl;
 

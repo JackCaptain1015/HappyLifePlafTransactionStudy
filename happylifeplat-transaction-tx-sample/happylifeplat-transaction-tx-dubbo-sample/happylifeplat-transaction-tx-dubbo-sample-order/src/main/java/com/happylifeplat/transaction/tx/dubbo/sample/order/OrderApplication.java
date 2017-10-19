@@ -27,7 +27,7 @@ import org.springframework.context.annotation.ImportResource;
  * @author xiaoyu
  */
 @SpringBootApplication
-@ImportResource({"classpath:applicationContext.xml"})
+@ImportResource({"classpath*:applicationContext.xml"})
 @MapperScan("com.happylifeplat.transaction.tx.dubbo.sample.order.mapper")
 public class OrderApplication {
     public static void main(String[] args) {

@@ -26,7 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * @author xiaoyu
+ * 这是@TxTransaction注解的拦截器
  */
 @Component
 public class DubboTxTransactionInterceptor implements TxTransactionInterceptor {
@@ -41,6 +41,7 @@ public class DubboTxTransactionInterceptor implements TxTransactionInterceptor {
 
     @Override
     public Object interceptor(ProceedingJoinPoint pjp) throws Throwable {
+        /** attachment是map */
         String groupId = RpcContext.getContext().getAttachment("tx-group");
         return aspectTransactionService.invoke(groupId,pjp);
     }

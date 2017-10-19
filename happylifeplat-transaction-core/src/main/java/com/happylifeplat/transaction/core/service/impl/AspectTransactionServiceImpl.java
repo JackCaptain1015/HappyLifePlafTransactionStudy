@@ -44,14 +44,22 @@ public class AspectTransactionServiceImpl implements AspectTransactionService {
         this.txTransactionFactoryService = txTransactionFactoryService;
     }
 
+    /**
+     *
+     * ProceedingJoinPoint(连接点对象)中的proceed()方法来执行目标方法（即被环绕通知包围的方法）
+     */
     @Override
     public Object invoke(String transactionGroupId, ProceedingJoinPoint point) throws Throwable {
+        //方法签名 MethodSignature可以获取Method和returnType
         MethodSignature signature = (MethodSignature) point.getSignature();
         Method method = signature.getMethod();
+
         Class<?> clazz = point.getTarget().getClass();
         Object[] args = point.getArgs();
+
         Method thisMethod = clazz.getMethod(method.getName(), method.getParameterTypes());
 
+        // TODO: 2017/10/16  
         final String compensationId = CompensationLocal.getInstance().getCompensationId();
 
         TransactionInvocation invocation = new TransactionInvocation(clazz, thisMethod.getName(), args, method.getParameterTypes());

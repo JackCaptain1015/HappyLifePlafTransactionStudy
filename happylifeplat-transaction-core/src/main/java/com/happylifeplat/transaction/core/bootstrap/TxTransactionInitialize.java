@@ -48,6 +48,7 @@ public class TxTransactionInitialize {
      * 初始化服务
      */
     public void init(TxConfig txConfig) {
+        //在JVM关闭的时候，执行addShutdownHook中的线程，日志记录error
         Runtime.getRuntime().addShutdownHook(new Thread(() -> LOGGER.error("系统关闭")));
         try {
             initService.initialization(txConfig);

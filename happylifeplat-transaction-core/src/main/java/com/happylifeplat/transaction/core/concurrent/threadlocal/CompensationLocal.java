@@ -18,7 +18,7 @@
 package com.happylifeplat.transaction.core.concurrent.threadlocal;
 
 /**
- * @author xiaoyu
+ * 本地补偿对象
  */
 public class CompensationLocal {
 
@@ -36,6 +36,10 @@ public class CompensationLocal {
     private static final ThreadLocal<String> CURRENT_LOCAL = new ThreadLocal<>();
 
 
+    /**
+     * 补偿ID
+     * @param compensationId
+     */
     public void setCompensationId(String compensationId) {
         CURRENT_LOCAL.set(compensationId);
     }

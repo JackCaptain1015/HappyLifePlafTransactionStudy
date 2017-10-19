@@ -24,7 +24,7 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 
 /**
- * @author xiaoyu
+ * TxTransaction注解的实现
  */
 @Aspect
 public abstract class AbstractTxTransactionAspect {
@@ -35,11 +35,13 @@ public abstract class AbstractTxTransactionAspect {
         this.txTransactionInterceptor = txTransactionInterceptor;
     }
 
+    /**切点*/
     @Pointcut("@annotation(com.happylifeplat.transaction.core.annotation.TxTransaction)")
     public void txTransactionInterceptor() {
 
     }
 
+    /**环绕方法*/
     @Around("txTransactionInterceptor()")
     public Object interceptCompensableMethod(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
         return txTransactionInterceptor.interceptor(proceedingJoinPoint);

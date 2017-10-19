@@ -28,8 +28,13 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.stereotype.Component;
 
+
 /**
- * @author xiaoyu
+ * ApplicationContextAware可以获取到ApplicationContext，然后根据
+ * ApplicationContext.getBean("beanName")来获取相应的Bean。
+ *
+ * 这里还把TxTransactionBootstrap类交给Spring托管了，这样Spring能获取到
+ * 这个类，并且可以调用setApplicationContext来设置applicationContext
  */
 @Component
 public class TxTransactionBootstrap extends TxConfig implements ApplicationContextAware {
@@ -47,9 +52,19 @@ public class TxTransactionBootstrap extends TxConfig implements ApplicationConte
         this.txTransactionInitialize = txTransactionInitialize;
     }
 
+    /**
+     * 分布式事务管理启动.
+     * 当Spring初始化的时候，会搜索ApplicationContextAware，
+     * 并为setApplicationContext()设置进相关的applicationContext
+     * 例如：
+     * if (bean instanceof ApplicationContextAware) {
+        ((ApplicationContextAware) bean).setApplicationContext(ctx);
+       }
+     */
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         cfgContext = (ConfigurableApplicationContext) applicationContext;
+        //SpringBeanUtils对象中有了ConfigurationApplicationContext了。
         SpringBeanUtils.getInstance().setCfgContext(cfgContext);
         start(this);
     }
@@ -63,6 +78,7 @@ public class TxTransactionBootstrap extends TxConfig implements ApplicationConte
     }
 
     private boolean checkDataConfig(TxConfig txConfig) {
+        // txConfig配置在applicationContext.xml中设置了属性
         return !StringUtils.isBlank(txConfig.getTxManagerUrl());
     }
 }

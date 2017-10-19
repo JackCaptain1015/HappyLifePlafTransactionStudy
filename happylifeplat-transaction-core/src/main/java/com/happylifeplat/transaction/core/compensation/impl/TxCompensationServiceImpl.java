@@ -271,6 +271,7 @@ public class TxCompensationServiceImpl implements TxCompensationService {
      *
      * @param transactionRecover 补偿信息
      */
+    // TODO: 2017/10/17 执行补偿——解决分布式的最终一致性 
     @SuppressWarnings("unchecked")
     private void compensatoryTransfer(TransactionRecover transactionRecover) {
         if (Objects.nonNull(transactionRecover)) {
