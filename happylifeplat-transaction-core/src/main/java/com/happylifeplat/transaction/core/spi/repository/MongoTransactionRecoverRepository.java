@@ -24,12 +24,13 @@ import com.happylifeplat.transaction.common.exception.TransactionException;
 import com.happylifeplat.transaction.common.exception.TransactionRuntimeException;
 import com.happylifeplat.transaction.common.holder.Assert;
 import com.happylifeplat.transaction.common.holder.LogUtil;
-import com.happylifeplat.transaction.core.bean.MongoTransactionRecover;
-import com.happylifeplat.transaction.core.bean.TransactionInvocation;
-import com.happylifeplat.transaction.core.bean.TransactionRecover;
-import com.happylifeplat.transaction.core.config.TxConfig;
-import com.happylifeplat.transaction.core.config.TxMongoConfig;
-import com.happylifeplat.transaction.core.spi.ObjectSerializer;
+import com.happylifeplat.transaction.common.holder.RepositoryPathUtils;
+import com.happylifeplat.transaction.common.serializer.ObjectSerializer;
+import com.happylifeplat.transaction.common.bean.adapter.MongoAdapter;
+import com.happylifeplat.transaction.common.bean.TransactionInvocation;
+import com.happylifeplat.transaction.common.bean.TransactionRecover;
+import com.happylifeplat.transaction.common.config.TxConfig;
+import com.happylifeplat.transaction.common.config.TxMongoConfig;
 import com.happylifeplat.transaction.core.spi.TransactionRecoverRepository;
 import com.mongodb.MongoCredential;
 import com.mongodb.ServerAddress;
@@ -46,6 +47,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import java.net.InetSocketAddress;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -74,17 +76,20 @@ public class MongoTransactionRecoverRepository implements TransactionRecoverRepo
     @Override
     public int create(TransactionRecover transactionRecover) {
         try {
-            MongoTransactionRecover mongoTransactionRecover = new MongoTransactionRecover();
-            mongoTransactionRecover.setTransId(transactionRecover.getId());
-            mongoTransactionRecover.setCreateTime(transactionRecover.getCreateTime());
-            mongoTransactionRecover.setGroupId(transactionRecover.getGroupId());
-            mongoTransactionRecover.setLastTime(transactionRecover.getLastTime());
-            mongoTransactionRecover.setTaskId(transactionRecover.getTaskId());
-            mongoTransactionRecover.setRetriedCount(transactionRecover.getRetriedCount());
-            mongoTransactionRecover.setStatus(transactionRecover.getStatus());
-            final byte[] cache = objectSerializer.serialize(transactionRecover.getTransactionInvocation());
-            mongoTransactionRecover.setContents(cache);
-            template.save(mongoTransactionRecover, collectionName);
+            MongoAdapter mongoAdapter = new MongoAdapter();
+            mongoAdapter.setTransId(transactionRecover.getId());
+            mongoAdapter.setCreateTime(transactionRecover.getCreateTime());
+            mongoAdapter.setGroupId(transactionRecover.getGroupId());
+            mongoAdapter.setLastTime(transactionRecover.getLastTime());
+            mongoAdapter.setTaskId(transactionRecover.getTaskId());
+            mongoAdapter.setRetriedCount(transactionRecover.getRetriedCount());
+            mongoAdapter.setStatus(transactionRecover.getStatus());
+            mongoAdapter.setVersion(transactionRecover.getVersion());
+            final TransactionInvocation invocation = transactionRecover.getTransactionInvocation();
+            mongoAdapter.setTargetClass(invocation.getTargetClazz().getName());
+            mongoAdapter.setTargetMethod(invocation.getMethod());
+            mongoAdapter.setContents(objectSerializer.serialize(invocation));
+            template.save(mongoAdapter, collectionName);
         } catch (TransactionException e) {
             e.printStackTrace();
         }
@@ -120,7 +125,7 @@ public class MongoTransactionRecoverRepository implements TransactionRecoverRepo
         update.set("lastTime", new Date());
         update.set("retriedCount", transactionRecover.getRetriedCount() + 1);
         update.set("version", transactionRecover.getVersion() + 1);
-        final WriteResult writeResult = template.updateFirst(query, update, MongoTransactionRecover.class, collectionName);
+        final WriteResult writeResult = template.updateFirst(query, update, MongoAdapter.class, collectionName);
         if (writeResult.getN() <= 0) {
             throw new TransactionRuntimeException("更新数据异常!");
         }
@@ -138,12 +143,12 @@ public class MongoTransactionRecoverRepository implements TransactionRecoverRepo
     public TransactionRecover findById(String id) {
         Query query = new Query();
         query.addCriteria(new Criteria("transId").is(id));
-        MongoTransactionRecover cache = template.findOne(query, MongoTransactionRecover.class, collectionName);
+        MongoAdapter cache = template.findOne(query, MongoAdapter.class, collectionName);
         return buildByCache(cache);
 
     }
 
-    private TransactionRecover buildByCache(MongoTransactionRecover cache) {
+    private TransactionRecover buildByCache(MongoAdapter cache) {
         TransactionRecover recover = new TransactionRecover();
         recover.setId(cache.getTransId());
         recover.setCreateTime(cache.getCreateTime());
@@ -175,12 +180,34 @@ public class MongoTransactionRecoverRepository implements TransactionRecoverRepo
                 .in(TransactionStatusEnum.BEGIN.getCode(),
                         TransactionStatusEnum.FAILURE.getCode(),
                         TransactionStatusEnum.ROLLBACK.getCode()));
-        final List<MongoTransactionRecover> mongoTransactionRecoverList =
-                template.find(query, MongoTransactionRecover.class, collectionName);
-        if (CollectionUtils.isNotEmpty(mongoTransactionRecoverList)) {
-            return mongoTransactionRecoverList.stream().map(this::buildByCache).collect(Collectors.toList());
+        final List<MongoAdapter> mongoAdapterList =
+                template.find(query, MongoAdapter.class, collectionName);
+        if (CollectionUtils.isNotEmpty(mongoAdapterList)) {
+            return mongoAdapterList.stream().map(this::buildByCache).collect(Collectors.toList());
         }
 
+        return null;
+    }
+
+    /**
+     * 获取延迟多长时间后的事务信息,只要为了防止并发的时候，刚新增的数据被执行
+     *
+     * @param date 延迟后的时间
+     * @return List<TransactionRecover>
+     */
+    @Override
+    public List<TransactionRecover> listAllByDelay(Date date) {
+        Query query = new Query();
+        query.addCriteria(new Criteria("status")
+                .in(TransactionStatusEnum.BEGIN.getCode(),
+                        TransactionStatusEnum.FAILURE.getCode(),
+                        TransactionStatusEnum.ROLLBACK.getCode()))
+        .addCriteria(Criteria.where("lastTime").lt(date));
+        final List<MongoAdapter> mongoBeans =
+                template.find(query, MongoAdapter.class, collectionName);
+        if (CollectionUtils.isNotEmpty(mongoBeans)) {
+            return mongoBeans.stream().map(this::buildByCache).collect(Collectors.toList());
+        }
         return null;
     }
 
@@ -192,7 +219,7 @@ public class MongoTransactionRecoverRepository implements TransactionRecoverRepo
      */
     @Override
     public void init(String modelName, TxConfig txConfig) {
-        collectionName = modelName;
+        collectionName = RepositoryPathUtils.buildMongoTableName(modelName);
         final TxMongoConfig txMongoConfig = txConfig.getTxMongoConfig();
         MongoClientFactoryBean clientFactoryBean = buildMongoClientFactoryBean(txMongoConfig);
         try {
@@ -218,13 +245,13 @@ public class MongoTransactionRecoverRepository implements TransactionRecoverRepo
                 credential
         });
         List<String> urls = Splitter.on(",").trimResults().splitToList(config.getMongoDbUrl());
-        ServerAddress[] sds = new ServerAddress[urls.size()];
-        for (int i = 0; i < sds.length; i++) {
-            List<String> adds = Splitter.on(":").trimResults().splitToList(urls.get(i));
-            InetSocketAddress address = new InetSocketAddress(adds.get(0), Integer.parseInt(adds.get(1)));
-            sds[i] = new ServerAddress(address);
-        }
-        clientFactoryBean.setReplicaSetSeeds(sds);
+        final ServerAddress[] serverAddresses = urls.stream().filter(Objects::nonNull)
+                .map(url -> {
+                    List<String> adds = Splitter.on(":").trimResults().splitToList(url);
+                    return new ServerAddress(adds.get(0), Integer.valueOf(adds.get(1)));
+                }).collect(Collectors.toList()).toArray(new ServerAddress[urls.size()]);
+
+        clientFactoryBean.setReplicaSetSeeds(serverAddresses);
         return clientFactoryBean;
     }
 

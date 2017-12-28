@@ -17,6 +17,8 @@
  */
 package com.happylifeplat.transaction.core.annotation;
 
+import com.happylifeplat.transaction.common.enums.PropagationEnum;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -28,4 +30,14 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface TxTransaction {
+
+
+    PropagationEnum propagation() default PropagationEnum.PROPAGATION_REQUIRES_NEW;
+
+    /**
+     * 事务等待的最大时间 单位 秒
+     *
+     * @return 多少秒
+     */
+    int waitMaxTime() default 60;
 }

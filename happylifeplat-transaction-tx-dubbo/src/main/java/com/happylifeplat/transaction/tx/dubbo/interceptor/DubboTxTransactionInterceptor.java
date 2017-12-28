@@ -19,6 +19,7 @@ package com.happylifeplat.transaction.tx.dubbo.interceptor;
 
 
 import com.alibaba.dubbo.rpc.RpcContext;
+import com.happylifeplat.transaction.common.constant.CommonConstant;
 import com.happylifeplat.transaction.core.interceptor.TxTransactionInterceptor;
 import com.happylifeplat.transaction.core.service.AspectTransactionService;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -42,7 +43,7 @@ public class DubboTxTransactionInterceptor implements TxTransactionInterceptor {
     @Override
     public Object interceptor(ProceedingJoinPoint pjp) throws Throwable {
         /** attachment是map */
-        String groupId = RpcContext.getContext().getAttachment("tx-group");
+        String groupId = RpcContext.getContext().getAttachment(CommonConstant.TX_TRANSACTION_GROUP);
         return aspectTransactionService.invoke(groupId,pjp);
     }
 

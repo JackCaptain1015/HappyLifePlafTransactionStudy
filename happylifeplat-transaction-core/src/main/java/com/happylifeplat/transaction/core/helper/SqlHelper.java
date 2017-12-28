@@ -18,7 +18,7 @@
 
 package com.happylifeplat.transaction.core.helper;
 
-import com.happylifeplat.transaction.core.constant.Constant;
+import com.happylifeplat.transaction.common.holder.DbTypeUtils;
 
 /**
  * @author xiaoyu
@@ -27,18 +27,13 @@ public class SqlHelper {
 
     public static String buildCreateTableSql(String tableName, String driverClassName) {
         String createTableSql;
-        String dbType = "mysql";
-        if (driverClassName.contains(Constant.DB_MYSQL)) {
-            dbType = "mysql";
-        } else if (driverClassName.contains(Constant.DB_SQLSERVER)) {
-            dbType = "sqlserver";
-        } else if (driverClassName.contains(Constant.DB_ORACLE)) {
-            dbType = "oracle";
-        }
+        String dbType = DbTypeUtils.buildByDriverClassName(driverClassName);
         switch (dbType) {
             case "mysql": {
                 createTableSql = "CREATE TABLE `" + tableName + "` (\n" +
                         "  `id` varchar(64) NOT NULL,\n" +
+                        "  `target_class` varchar(256) ,\n" +
+                        "  `target_method` varchar(128) ,\n" +
                         "  `retried_count` int(3) NOT NULL,\n" +
                         "  `create_time` datetime NOT NULL,\n" +
                         "  `last_time` datetime NOT NULL,\n" +
@@ -53,6 +48,8 @@ public class SqlHelper {
             case "oracle": {
                 createTableSql = "CREATE TABLE `" + tableName + "` (\n" +
                         "  `id` varchar(64) NOT NULL,\n" +
+                        "  `target_class` varchar(256) ,\n" +
+                        "  `target_method` varchar(128) ,\n" +
                         "  `retried_count` int(3) NOT NULL,\n" +
                         "  `create_time` date NOT NULL,\n" +
                         "  `last_time` date NOT NULL,\n" +
@@ -67,6 +64,8 @@ public class SqlHelper {
             case "sqlserver": {
                 createTableSql = "CREATE TABLE `" + tableName + "` (\n" +
                         "  `id` varchar(64) NOT NULL,\n" +
+                        "  `target_class` varchar(256) ,\n" +
+                        "  `target_method` varchar(128) ,\n" +
                         "  `retried_count` int(3) NOT NULL,\n" +
                         "  `create_time` datetime NOT NULL,\n" +
                         "  `last_time` datetime NOT NULL,\n" +

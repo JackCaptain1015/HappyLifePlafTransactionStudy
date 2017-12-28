@@ -17,6 +17,7 @@
  */
 package com.happylifeplat.transaction.tx.springcloud.feign;
 
+import com.happylifeplat.transaction.common.constant.CommonConstant;
 import com.happylifeplat.transaction.core.concurrent.threadlocal.TxTransactionLocal;
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
@@ -29,7 +30,7 @@ public class RestTemplateInterceptor implements RequestInterceptor {
 
     @Override
     public void apply(RequestTemplate requestTemplate) {
-        requestTemplate.header("tx-group", TxTransactionLocal.getInstance().getTxGroupId());
+        requestTemplate.header(CommonConstant.TX_TRANSACTION_GROUP, TxTransactionLocal.getInstance().getTxGroupId());
     }
 
 }

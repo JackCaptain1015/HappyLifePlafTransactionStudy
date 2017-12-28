@@ -17,8 +17,10 @@
  */
 package com.happylifeplat.transaction.core.service.impl;
 
-import com.happylifeplat.transaction.core.bean.TransactionInvocation;
-import com.happylifeplat.transaction.core.bean.TxTransactionInfo;
+import com.happylifeplat.transaction.common.enums.PropagationEnum;
+import com.happylifeplat.transaction.core.annotation.TxTransaction;
+import com.happylifeplat.transaction.common.bean.TransactionInvocation;
+import com.happylifeplat.transaction.common.bean.TxTransactionInfo;
 import com.happylifeplat.transaction.core.concurrent.threadlocal.CompensationLocal;
 import com.happylifeplat.transaction.core.helper.SpringBeanUtils;
 import com.happylifeplat.transaction.core.service.AspectTransactionService;
@@ -62,8 +64,14 @@ public class AspectTransactionServiceImpl implements AspectTransactionService {
         // TODO: 2017/10/16  
         final String compensationId = CompensationLocal.getInstance().getCompensationId();
 
+        final TxTransaction txTransaction = method.getAnnotation(TxTransaction.class);
+
+        final int waitMaxTime = txTransaction.waitMaxTime();
+
+        final PropagationEnum propagation = txTransaction.propagation();
+
         TransactionInvocation invocation = new TransactionInvocation(clazz, thisMethod.getName(), args, method.getParameterTypes());
-        TxTransactionInfo info = new TxTransactionInfo(compensationId, transactionGroupId, invocation);
+        TxTransactionInfo info = new TxTransactionInfo(invocation,transactionGroupId,compensationId,waitMaxTime,propagation);
         final Class c = txTransactionFactoryService.factoryOf(info);
         final TxTransactionHandler txTransactionHandler =
                 (TxTransactionHandler) SpringBeanUtils.getInstance().getBean(c);

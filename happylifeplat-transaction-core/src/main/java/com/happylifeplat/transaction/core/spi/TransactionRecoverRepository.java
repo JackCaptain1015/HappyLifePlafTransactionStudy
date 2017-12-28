@@ -19,8 +19,9 @@ package com.happylifeplat.transaction.core.spi;
 
 
 import com.happylifeplat.transaction.common.exception.TransactionRuntimeException;
-import com.happylifeplat.transaction.core.bean.TransactionRecover;
-import com.happylifeplat.transaction.core.config.TxConfig;
+import com.happylifeplat.transaction.common.serializer.ObjectSerializer;
+import com.happylifeplat.transaction.common.bean.TransactionRecover;
+import com.happylifeplat.transaction.common.config.TxConfig;
 
 import java.util.Date;
 import java.util.List;
@@ -70,6 +71,15 @@ public interface TransactionRecoverRepository {
      * @return List<TransactionRecover>
      */
     List<TransactionRecover> listAll();
+
+
+    /**
+     * 获取延迟多长时间后的事务信息,只要为了防止并发的时候，刚新增的数据被执行
+     *
+     * @param date 延迟后的时间
+     * @return List<TransactionRecover>
+     */
+    List<TransactionRecover> listAllByDelay(Date date);
 
 
     /**
